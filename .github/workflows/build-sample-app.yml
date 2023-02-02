@@ -1,0 +1,62 @@
+name: Build and Publish Sample Application
+
+on:
+  push:
+    paths-ignore:
+      - 'doc/**'
+    branches:
+      - '**'
+    tags:
+      - '*'
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.event.pull_request.base.repo.full_name
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Setup Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18.7
+          registry-url: https://npm.pkg.github.com/
+
+      - name: Setup Java SDK
+        uses: actions/setup-java@v1.4.3
+        with:
+          java-version: 11
+
+      - name: Build frontend
+        env:
+          NODE_AUTH_TOKEN: ${{secrets.GITHUB_TOKEN}}
+        run: |
+          echo '//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}' >> .npmrc
+          npm ci
+          npm run-script format-lint
+          npm run build
+        working-directory: frontend
+
+      - name: Copy frontend artifacts
+        run: |
+          mkdir -p backend/sirius-web-frontend/src/main/resources/static
+          cp -R frontend/build/* backend/sirius-web-frontend/src/main/resources/static
+
+      - name: Build backend with Maven
+        env:
+          USERNAME: ${{github.actor}}
+          PASSWORD: ${{secrets.GITHUB_TOKEN}}
+        run: |
+          mvn -U -B clean verify -f backend/pom.xml --settings settings.xml
+          mkdir staging
+          find backend/sirius-web-sample-application/target -maxdepth 1 -name "*.jar" -not -name "*-sources.jar" -exec cp {} staging/sirius-web-sample-application.jar \;
+
+      - name: Publish sample application
+        uses: actions/upload-artifact@v2
+        with:
+          name: SiriusWebSample
+          path: staging
