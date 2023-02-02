@@ -4,6 +4,7 @@ https://www.eclipse.org/sirius/sirius-web.html[Eclipse Sirius Web] is a framewor
 We keep the principles which made the success of https://www.eclipse.org/sirius[Eclipse Sirius Desktop] and make them available on a modern cloud-based stack.
 
 image::ProjectEditor.png[Sirius Web]
+image::rasa.gif
 
 This repository, `sirius-web`, contains an example application of the Sirius Web platform, built using the frontend and backend components in https://github.com/eclipse-sirius/sirius-components[`sirius-components`].
 
